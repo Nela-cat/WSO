@@ -1,0 +1,507 @@
+Zadanie 7.17. Potoki nienazwane – funkcja popen – programy typu kilent-serwer
+Przepisz, skompiluj i uruchom następujące programy zamieszczone poniżej. Programy te
+będą stanowic bazę dla dalszych ćwiczeń.
+Aby przetestować ich działanie należy umieścić skompilowane uruchamialne pliki w tym
+samym katalogu.
+
+
+// serwer.c:
+ #include <stdio.h>
+ #include <stdlib.h>
+ int main(int argc, char** argv) {
+ int i;
+ for (i = 0; i < 10; ++i)
+ printf("Serwer: wysyłam linie nr %d\n", i);
+ fflush(stdout);
+ return (EXIT_SUCCESS);
+ }
+ 
+ 
+ 
+ 
+ 
+ // klient.c:
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+ #define BUF_SIZE 2048
+ int main(int argc, char** argv) {
+ /* trying to run command */
+ FILE *command_result = popen("./serwer", "r");
+ if (command_result) {
+ char bufor[BUF_SIZE];
+ /* reading output line */
+ fgets(bufor, BUF_SIZE, command_result);
+ /* if "file" was not finished */
+ while (!feof(command_result)) {
+ printf("Serwer wysłał: %s", bufor);
+ fgets(bufor, BUF_SIZE, command_result);
+ }
+ /* end of readiing results */
+ pclose(command_result);
+ fflush(stdout);
+ return EXIT_SUCCESS;
+ } else {
+ printf("Niepowodzenie funkcji popen \n");
+ fflush(stdout);
+ return EXIT_FAILURE;
+ }
+ }
+ 
+ 
+ 
+ Zadanie 7.18. Potoki nienazwane – funkcja popen – programy typu kilent-serwer
+Zmodyfikuj powyższe programy z zadania 7.17 tak aby serwer oczekiwał 1 s (funkcja sleep)
+przed wysłaniem każdej linii. Program klienta powinien odczekać 2 sekundy przed
+wyświetleniem otrzymanej informacji.
+
+serwer.c:
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+int main(int argc, char** argv) {
+    int i;
+    for (i = 0; i < 10; ++i) {
+        sleep(1); // Oczekiwanie 1 sekundy przed wysłaniem kolejnej linii
+        printf("Serwer: wysyłam linie nr %d\n", i);
+        fflush(stdout);
+    }
+    return EXIT_SUCCESS;
+}
+
+
+
+
+klient.c:
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define BUF_SIZE 2048
+
+int main(int argc, char** argv) {
+    FILE *command_result = popen("./serwer", "r");
+    if (command_result) {
+        char buffer[BUF_SIZE];
+        sleep(2); // Oczekiwanie 2 sekundy przed wyświetleniem otrzymanej informacji
+        fgets(buffer, BUF_SIZE, command_result);
+        while (!feof(command_result)) {
+            printf("Serwer wysłał: %s", buffer);
+            fgets(buffer, BUF_SIZE, command_result);
+        }
+        pclose(command_result);
+        fflush(stdout);
+        return EXIT_SUCCESS;
+    } else {
+        printf("Niepowodzenie funkcji popen \n");
+        fflush(stdout);
+        return EXIT_FAILURE;
+    }
+}
+
+
+W celu wykonania zadania 7.18, dokonaliśmy dwóch zmian w kodzie programów serwer.c i klient.c:
+
+W pliku serwer.c dodaliśmy funkcję sleep(1); przed wysłaniem każdej linii. Spowoduje to opóźnienie serwera o 1 sekundę przed wysłaniem kolejnej linii.
+
+W pliku klient.c dodaliśmy funkcję sleep(2); przed wyświetleniem otrzymanej informacji. Spowoduje to opóźnienie klienta o 2 sekundy przed wyświetleniem otrzymanej linii od serwera.
+
+Dzięki tym zmianom serwer oczekuje 1 sekundy przed wysłaniem każdej linii, a klient oczekuje 2 sekundy przed wyświetleniem otrzymanej informacji.
+
+Po dokonaniu tych modyfikacji, programy są gotowe do uruchomienia i będą spełniać wymagania zadania 7.18.
+
+
+
+Zadanie 7.19. Potoki nienazwane – funkcja popen – operacje na buforze
+Zmodyfikuj program klienta z zadania 7.17 tak aby wyświetlał jedynie numer wysłany przez
+program serwera.
+
+
+
+Aby zmodyfikować program klienta z zadania 7.17 tak, aby wyświetlał jedynie numer wysłany przez program serwera, możemy wprowadzić następujące zmiany:
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define BUF_SIZE 2048
+
+int main(int argc, char** argv) {
+    FILE *command_result = popen("./serwer", "r");
+    if (command_result) {
+        char bufor[BUF_SIZE];
+        sleep(2); // Oczekiwanie 2 sekundy przed odczytaniem wyników
+
+        while (fgets(bufor, BUF_SIZE, command_result) != NULL) {
+            printf("Serwer wysłał: %s", bufor);
+        }
+
+        pclose(command_result);
+        fflush(stdout);
+        return EXIT_SUCCESS;
+    } else {
+        printf("Niepowodzenie funkcji popen\n");
+        fflush(stdout);
+        return EXIT_FAILURE;
+    }
+}
+
+
+
+W powyższym programie klienta używamy funkcji popen() do uruchomienia programu serwera i odczytania jego wyników. Następnie używamy funkcji fgets() do odczytania kolejnych linii z wyników i wyświetlamy je na ekranie. Przed wyświetleniem wyników czekamy 2 sekundy za pomocą funkcji sleep(), jak wymaga zadanie 7.18.
+
+Po wykonaniu tych zmian program klienta będzie oczekiwał 2 sekundy przed wyświetleniem otrzymanych informacji od serwera, zgodnie z wymaganiami zadania 7.18.
+
+
+
+
+
+Zadanie 7.20. Potoki nienazwane – funkcja pipe
+Połącz programy serwera i klienta w jeden program tak aby korzystały z funkcji pipe(0)
+zamiast popen(). Dla uproszczenia użyj pełnego bufora 2048 bajtów.
+
+
+Oto zmodyfikowany program, który łączy funkcjonalność serwera i klienta w jeden program przy użyciu funkcji pipe():
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#define BUF_SIZE 2048
+
+int main(int argc, char** argv) {
+    int fd[2];
+    char buf[BUF_SIZE];
+
+    if (pipe(fd) == -1) {
+        perror("Błąd przy tworzeniu potoku");
+        exit(EXIT_FAILURE);
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Błąd przy tworzeniu procesu potomnego");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) {
+        // Proces potomny - serwer
+        close(fd[0]); // Zamykamy deskryptor do odczytu
+        dup2(fd[1], STDOUT_FILENO); // Przekierowanie stdout do deskryptora potoku
+
+        for (int i = 0; i < 10; ++i) {
+            sleep(1); // Oczekiwanie 1 sekundy przed wysłaniem linii
+            printf("Serwer: wysyłam linie nr %d\n", i);
+            fflush(stdout);
+        }
+
+        close(fd[1]); // Zamykamy deskryptor do zapisu
+        exit(EXIT_SUCCESS);
+    } else {
+        // Proces macierzysty - klient
+        close(fd[1]); // Zamykamy deskryptor do zapisu
+
+        sleep(2); // Oczekiwanie 2 sekundy przed odczytaniem wyników
+
+        ssize_t bytesRead;
+        while ((bytesRead = read(fd[0], buf, BUF_SIZE)) > 0) {
+            write(STDOUT_FILENO, buf, bytesRead);
+        }
+
+        close(fd[0]); // Zamykamy deskryptor do odczytu
+        wait(NULL); // Oczekiwanie na zakończenie procesu potomnego
+
+        exit(EXIT_SUCCESS);
+    }
+
+    return 0;
+}
+
+
+W tym zmodyfikowanym programie połączyliśmy funkcjonalność serwera i klienta w jeden program, używając funkcji pipe() do utworzenia potoku między nimi. Proces macierzysty działa jako klient, a proces potomny jako serwer.
+
+W procesie potomnym (serwerze) mamy pętlę, która wysyła 10 linii z opóźnieniem 1 sekundy przed każdą linijką. Wyjście standardowe (stdout) jest przekierowane do deskryptora potoku za pomocą dup2().
+
+W procesie macierzystym (kliencie) oczekujemy 2 sekundy za pomocą funkcji sleep() przed odczytaniem wyników z potoku. Następnie używamy read() do odczytu danych z deskryptora potoku i wyświetlamy je na ekranie za pomocą write().
+
+Po zakończeniu operacji odczytu i zapisu zamykamy odpowiednie deskryptory potoku i oczekujemy na zakończenie procesu potomnego za pomocą wait().
+
+
+
+Zadanie 7.21. Potoki nienazwane – pliki FIFO (procesy potomne)
+Zmodyfikuj program z zadania 7.20 tak aby do komunikacji wykorzystywał potoki nazwane
+(FIFO files).
+
+Oto zmodyfikowany program, który wykorzystuje potoki nazwane (FIFO files) do komunikacji między procesami:
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define BUF_SIZE 2048
+#define FIFO_FILE "myfifo"
+
+int main(int argc, char** argv) {
+    int fd;
+    char buf[BUF_SIZE];
+
+    if (mkfifo(FIFO_FILE, 0666) == -1) {
+        perror("Błąd przy tworzeniu potoku nazwanego");
+        exit(EXIT_FAILURE);
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Błąd przy tworzeniu procesu potomnego");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pid == 0) {
+        // Proces potomny - serwer
+        fd = open(FIFO_FILE, O_WRONLY);
+        if (fd == -1) {
+            perror("Błąd przy otwieraniu potoku nazwanego");
+            exit(EXIT_FAILURE);
+        }
+
+        for (int i = 0; i < 10; ++i) {
+            sleep(1); // Oczekiwanie 1 sekundy przed wysłaniem linii
+            sprintf(buf, "Serwer: wysyłam linie nr %d\n", i);
+            write(fd, buf, strlen(buf));
+        }
+
+        close(fd);
+        exit(EXIT_SUCCESS);
+    } else {
+        // Proces macierzysty - klient
+        fd = open(FIFO_FILE, O_RDONLY);
+        if (fd == -1) {
+            perror("Błąd przy otwieraniu potoku nazwanego");
+            exit(EXIT_FAILURE);
+        }
+
+        sleep(2); // Oczekiwanie 2 sekundy przed odczytaniem wyników
+
+        ssize_t bytesRead;
+        while ((bytesRead = read(fd, buf, BUF_SIZE)) > 0) {
+            write(STDOUT_FILENO, buf, bytesRead);
+        }
+
+        close(fd);
+        wait(NULL); // Oczekiwanie na zakończenie procesu potomnego
+
+        exit(EXIT_SUCCESS);
+    }
+
+    return 0;
+}
+
+
+W tym zmodyfikowanym programie korzystamy z potoków nazwanych (FIFO files) do komunikacji między procesami. Tworzymy potok nazwany przy użyciu funkcji mkfifo() i podajemy mu nazwę "myfifo".
+
+Proces potomny (serwer) otwiera potok nazwany w trybie zapisu (O_WRONLY) za pomocą funkcji open(). Następnie w pętli wysyła 10 linii z opóźnieniem 1 sekundy przed każdą linijką, korzystając z write().
+
+Proces macierzysty (klient) otwiera potok nazwany w trybie odczytu (O_RDONLY) za pomocą funkcji open(). Oczekuje 2 sekundy (sleep()) przed odczytaniem wyników z potoku. Następnie używa read() do odczytu danych z potoku i wyświetla je na ekranie za pomocą write().
+
+
+
+
+Zadanie 7.22. Potoki nienazwane – pliki FIFO (procesy niespokrewnione)
+Zmodyfikuj program z zadania 7.21 tak aby ponownie działał w postaci 2 programów klienta
+i serwera i do komunikacji wykorzystywał potoki nazwane (FIFO files).
+
+
+Oto zmodyfikowany program, który składa się z dwóch programów klienta i serwera, które komunikują się za pomocą potoków nazwanych (FIFO files):
+
+Serwer:
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define BUF_SIZE 2048
+#define FIFO_FILE "myfifo"
+
+int main(int argc, char** argv) {
+    int fd;
+    char buf[BUF_SIZE];
+
+    if (mkfifo(FIFO_FILE, 0666) == -1) {
+        perror("Błąd przy tworzeniu potoku nazwanego");
+        exit(EXIT_FAILURE);
+    }
+
+    fd = open(FIFO_FILE, O_WRONLY);
+    if (fd == -1) {
+        perror("Błąd przy otwieraniu potoku nazwanego");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < 10; ++i) {
+        sleep(1); // Oczekiwanie 1 sekundy przed wysłaniem linii
+        sprintf(buf, "Serwer: wysyłam linie nr %d\n", i);
+        write(fd, buf, strlen(buf));
+    }
+
+    close(fd);
+    exit(EXIT_SUCCESS);
+}
+
+
+
+
+Klient:
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define BUF_SIZE 2048
+#define FIFO_FILE "myfifo"
+
+int main(int argc, char** argv) {
+    int fd;
+    char buf[BUF_SIZE];
+
+    fd = open(FIFO_FILE, O_RDONLY);
+    if (fd == -1) {
+        perror("Błąd przy otwieraniu potoku nazwanego");
+        exit(EXIT_FAILURE);
+    }
+
+    sleep(2); // Oczekiwanie 2 sekundy przed odczytaniem wyników
+
+    ssize_t bytesRead;
+    while ((bytesRead = read(fd, buf, BUF_SIZE)) > 0) {
+        write(STDOUT_FILENO, buf, bytesRead);
+    }
+
+    close(fd);
+    exit(EXIT_SUCCESS);
+}
+
+
+
+W programie serwera tworzymy potok nazwany (FIFO file) przy użyciu mkfifo() i otwieramy go w trybie zapisu (O_WRONLY) za pomocą open(). Następnie w pętli wysyłamy 10 linii z opóźnieniem 1 sekundy przed każdą linijką, korzystając z write().
+
+W programie klienta otwieramy ten sam potok nazwany w trybie odczytu (O_RDONLY) i oczekujemy 2 sekundy (sleep()) przed odczytaniem wyników z potoku. Następnie używamy read() do odczytu danych z potoku i wyświetlamy je na ekranie za pomocą write().
+
+W obu programach korzystamy z tej samej nazwy pliku FIFO (FIFO_FILE). Upewnij się, że najpierw uruchamiasz program serwera, a następnie program klienta, aby zachować poprawną kolejność komunikacji między nimi.
+
+
+
+Zadanie 7.23. Potoki nienazwane – pliki FIFO (procesy niespokrewnione, tryb
+nieblokujący)
+Zmodyfikuj program z zadania 7.22 tak aby serwer otwierał plik specjalny FIFO w trybie
+nieblokującym. Ponownie jak to należało zrobić w zadaniu 2 dodaj 1 s opóźnienie zapisu i 2 s
+odczytu. Ile czasu będzie wymagało przesłanie danych? 
+
+
+Oto zmodyfikowany program, który korzysta z plików FIFO w trybie nieblokującym:
+
+Serwer:
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define BUF_SIZE 2048
+#define FIFO_FILE "myfifo"
+
+int main(int argc, char** argv) {
+    int fd;
+    char buf[BUF_SIZE];
+
+    if (mkfifo(FIFO_FILE, 0666) == -1) {
+        perror("Błąd przy tworzeniu potoku nazwanego");
+        exit(EXIT_FAILURE);
+    }
+
+    fd = open(FIFO_FILE, O_WRONLY | O_NONBLOCK);
+    if (fd == -1) {
+        perror("Błąd przy otwieraniu potoku nazwanego");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < 10; ++i) {
+        sleep(1); // Oczekiwanie 1 sekundy przed wysłaniem linii
+        sprintf(buf, "Serwer: wysyłam linie nr %d\n", i);
+
+        ssize_t bytesWritten = write(fd, buf, strlen(buf));
+        if (bytesWritten == -1) {
+            perror("Błąd przy zapisie do potoku nazwanego");
+            break;
+        }
+    }
+
+    close(fd);
+    unlink(FIFO_FILE); // Usunięcie potoku nazwanego
+
+    exit(EXIT_SUCCESS);
+}
+
+Klient:
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <string.h>
+
+#define BUF_SIZE 2048
+#define FIFO_FILE "myfifo"
+
+int main(int argc, char** argv) {
+    int fd;
+    char buf[BUF_SIZE];
+
+    fd = open(FIFO_FILE, O_RDONLY | O_NONBLOCK);
+    if (fd == -1) {
+        perror("Błąd przy otwieraniu potoku nazwanego");
+        exit(EXIT_FAILURE);
+    }
+
+    sleep(2); // Oczekiwanie 2 sekundy przed odczytaniem wyników
+
+    ssize_t bytesRead;
+    while ((bytesRead = read(fd, buf, BUF_SIZE)) > 0) {
+        write(STDOUT_FILENO, buf, bytesRead);
+    }
+
+    close(fd);
+    exit(EXIT_SUCCESS);
+}
+
+
+
+W programie serwera otwieramy potok nazwany w trybie zapisu (O_WRONLY) i dodajemy flagę O_NONBLOCK do funkcji open(). To ustawienie powoduje, że operacje zapisu nie będą blokować procesu, nawet jeśli potok jest pełny.
+
+W pętli serwera dodajemy również sprawdzenie wartości zwracanej przez write(), aby obsłużyć sytuację, gdy potok jest pełny. Jeśli zapis do potoku nie jest możliwy, funkcja write() zwraca wartość -1, a następnie wypisujemy odpowiedni komunikat błędu.
+
+W programie klienta nie są wymagane zmiany, ponieważ to serwer otwiera potok w trybie nieblokującym, a klient tylko odczytuje dane.
